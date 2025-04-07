@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebRTC Video Call Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 20px;
+    }
+    video {
+      width: 300px;
+      margin: 10px;
+      border: 1px solid #ccc;
+    }
+    #startButton {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebRTC Video Call</h1>
+  <button id="startButton">Start Video Call</button>
+  <br>
+  <!-- Local video -->
+  <video id="localVideo" autoplay muted playsinline></video>
+  <!-- Remote video -->
+  <video id="remoteVideo" autoplay playsinline></video>
+
+  <!-- Load the SimpleWebRTC library from a CDN -->
+  <script src="https://simplewebrtc.com/latest-v3.js"></script>
+  <script>
+    // Reference the start button
+    const startButton = document.getElementById("startButton");
+
+    // Event listener to start the call when the button is clicked
+    startButton.addEventListener("click", function () {
+      // Create a new SimpleWebRTC instance.
+      const webrtc = new SimpleWebRTC({
+        localVideoEl: 'localVideo',   // ID of the local video element
+        remoteVideosEl: 'remoteVideo', // ID of the remote video element
+        autoRequestMedia: true         // Automatically request access to webcam/microphone
+      });
+
+      // When the connection is ready, join the room.
+      webrtc.on('readyToCall', function () {
+        // Both clients must use the same room name.
+        webrtc.joinRoom('videoChatRoom');
+      });
+
+      // Hide the button once clicked.
+      startButton.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
