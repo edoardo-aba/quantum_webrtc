@@ -1,52 +1,71 @@
 const express = require('express');
-const app = express();
-const server = require('http').Server(app);
-const { ExpressPeerServer } = require('peer');
-const cors = require('cors');
-const io = require('socket.io')(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+const http = require('http');
+const { Server } = require("socket.io");
 const { v4: uuidV4 } = require('uuid');
-const WebSocket = require('ws'); // Import the ws package
 
-// Enable CORS for all routes
-app.use(cors());
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+const port = process.env.PORT || 3000;
 
-// Serve static files from the "public" folder
+// Serve static files from the 'public' directory
 app.use(express.static('public'));
 
-// Mount the PeerJS server with a custom createWebSocketServer option
-const peerServer = ExpressPeerServer(server, {
-  debug: true,
-  path: '/peerjs',
-  createWebSocketServer: (options) => new WebSocket.Server(options)
-});
-app.use('/peerjs', peerServer);
+// Room management: an object to store room IDs and their connected socket IDs.
+const rooms = {};
 
-// If a user visits the root, generate a new room and redirect
-app.get('/', (req, res) => {
-  res.redirect('/' + uuidV4());
-});
+io.on('connection', (socket) => {
+    console.log('New client connected:', socket.id);
 
-// For any room URL (e.g., "/abc123"), serve the static HTML file
-app.get('/:room', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
+    // Create Room
+    socket.on('createRoom', () => {
+        const roomId = uuidV4();
+        socket.join(roomId);
+        rooms[roomId] = [socket.id];
+        console.log(`Room ${roomId} created by ${socket.id}`);
+        // Notify the creator with the room ID to share with a peer.
+        socket.emit('roomCreated', roomId);
+    });
 
-// Socket.IO signaling for user connections/disconnections
-io.on('connection', socket => {
-  socket.on('join-room', (roomId, userId) => {
-    socket.join(roomId);
-    socket.to(roomId).broadcast.emit('user-connected', userId);
+    // Join Room
+    socket.on('joinRoom', (roomId) => {
+        if(rooms[roomId] && rooms[roomId].length === 1){
+            socket.join(roomId);
+            rooms[roomId].push(socket.id);
+            console.log(`Socket ${socket.id} joined room ${roomId}`);
+            // Inform both clients that the room is now populated
+            io.to(roomId).emit('roomJoined');
+        } else {
+            console.log(`Socket ${socket.id} failed to join room ${roomId}`);
+            socket.emit('errorMessage', 'Room is full or does not exist');
+        }
+    });
+
+    // Signaling: exchange SDP and ICE candidate information
+    socket.on('signal', ({ roomId, data }) => {
+        // Send data to the other socket in the same room.
+        socket.to(roomId).emit('signal', data);
+    });
+
+    // Handle disconnect: remove socket from any rooms and delete empty rooms
+    socket.on('disconnecting', () => {
+        for(const roomId of socket.rooms) {
+            // Skip socket's own room (each socket automatically joins a room with its own id)
+            if(roomId === socket.id) continue;
+            if(rooms[roomId]){
+                rooms[roomId] = rooms[roomId].filter(id => id !== socket.id);
+                if(rooms[roomId].length === 0) {
+                    delete rooms[roomId];
+                }
+            }
+        }
+    });
 
     socket.on('disconnect', () => {
-      socket.to(roomId).broadcast.emit('user-disconnected', userId);
+      console.log('Socket disconnected:', socket.id);
     });
-  });
 });
 
-// Start the server on port 3000
-server.listen(3000, () => console.log('Server is running on http://localhost:3000'));
+server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});

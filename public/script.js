@@ -1,67 +1,138 @@
-const socket = io('/');
-const videoGrid = document.getElementById('video-grid');
+const socket = io();
 
-// Create a new PeerJS instance connecting to our server
-const myPeer = new Peer(undefined, {
-  host: '/',
-  port: 3000,
-  path: '/peerjs'
+let localStream;
+let remoteStream;
+let peerConnection;
+let roomId = null;
+
+const configuration = {
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" }
+    ]
+};
+
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+const createRoomButton = document.getElementById('createRoom');
+const joinRoomButton = document.getElementById('joinRoom');
+const roomIdInput = document.getElementById('roomIdInput');
+const messagesDiv = document.getElementById('messages');
+
+// Event Listener for Room Creation
+createRoomButton.addEventListener('click', async () => {
+    roomId = null;
+    await startMedia();
+    socket.emit('createRoom');
 });
 
-const myVideo = document.createElement('video');
-myVideo.muted = true; // Mute your own video stream to avoid echo
-const peers = {};
-
-// Get access to the user's video/audio stream
-navigator.mediaDevices.getUserMedia({
-  video: true,
-  audio: true
-}).then(stream => {
-  addVideoStream(myVideo, stream);
-
-  // Answer incoming calls and add their video stream to the grid
-  myPeer.on('call', call => {
-    call.answer(stream);
-    const video = document.createElement('video');
-    call.on('stream', userVideoStream => {
-      addVideoStream(video, userVideoStream);
-    });
-  });
-
-  // When a new user connects, call them and send your stream
-  socket.on('user-connected', userId => {
-    connectToNewUser(userId, stream);
-  });
+// Event Listener for Joining a Room
+joinRoomButton.addEventListener('click', async () => {
+    roomId = roomIdInput.value.trim();
+    if (!roomId) {
+        displayMessage('Please enter a room ID.');
+        return;
+    }
+    await startMedia();
+    socket.emit('joinRoom', roomId);
 });
 
-// Remove video stream when a user disconnects
-socket.on('user-disconnected', userId => {
-  if (peers[userId]) peers[userId].close();
+// Socket event: Room created
+socket.on('roomCreated', (id) => {
+    roomId = id;
+    displayMessage(`Room created. Share this Room ID: ${roomId}`);
 });
 
-// When PeerJS is open, join the room using the room id from the URL
-myPeer.on('open', id => {
-  socket.emit('join-room', ROOM_ID, id);
+// Socket event: Room joined (both users in room)
+socket.on('roomJoined', () => {
+    displayMessage('A peer has joined the room. Starting connection...');
+    initiatePeerConnection();
+    // As the room creator, start the offer process
+    if (peerConnection && localStream) {
+        createOffer();
+    }
 });
 
-// Function to connect to a new user by calling them via PeerJS
-function connectToNewUser(userId, stream) {
-  const call = myPeer.call(userId, stream);
-  const video = document.createElement('video');
-  call.on('stream', userVideoStream => {
-    addVideoStream(video, userVideoStream);
-  });
-  call.on('close', () => {
-    video.remove();
-  });
-  peers[userId] = call;
+// Socket event: Signal received
+socket.on('signal', async (data) => {
+    if (!peerConnection) {
+        initiatePeerConnection();
+    }
+    // If the data contains session description
+    if (data.sdp) {
+        try {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            if (data.sdp.type === 'offer') {
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('signal', { roomId, data: { sdp: peerConnection.localDescription } });
+            }
+        } catch (error) {
+            console.error('Error handling SDP:', error);
+        }
+    } 
+    // If the data contains an ICE candidate
+    else if (data.candidate) {
+        try {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (error) {
+            console.error('Error adding ICE candidate:', error);
+        }
+    }
+});
+
+// Start media: access camera and microphone
+async function startMedia() {
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
+    } catch (error) {
+        console.error('Error accessing media devices.', error);
+        displayMessage('Could not access camera or microphone.');
+    }
 }
 
-// Helper function to add a video stream to the grid
-function addVideoStream(video, stream) {
-  video.srcObject = stream;
-  video.addEventListener('loadedmetadata', () => {
-    video.play();
-  });
-  videoGrid.append(video);
+// Initialize the RTCPeerConnection and add media tracks
+function initiatePeerConnection() {
+    peerConnection = new RTCPeerConnection(configuration);
+
+    // Add each track from the local stream to the peer connection.
+    localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+    });
+
+    // Listen for remote tracks and display them.
+    peerConnection.addEventListener('track', event => {
+        if (!remoteStream) {
+            remoteStream = new MediaStream();
+            remoteVideo.srcObject = remoteStream;
+        }
+        remoteStream.addTrack(event.track);
+    });
+
+    // When an ICE candidate is generated, send it to the signaling server.
+    peerConnection.addEventListener('icecandidate', event => {
+        if (event.candidate) {
+            socket.emit('signal', { roomId, data: { candidate: event.candidate } });
+        }
+    });
+
+    peerConnection.addEventListener('iceconnectionstatechange', () => {
+        console.log('ICE Connection State:', peerConnection.iceConnectionState);
+    });
+}
+
+// Create and send an SDP offer to the peer.
+async function createOffer() {
+    try {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit('signal', { roomId, data: { sdp: peerConnection.localDescription } });
+    } catch (error) {
+        console.error('Error creating an offer:', error);
+    }
+}
+
+// Simple utility to display messages or error prompts to the user.
+function displayMessage(message) {
+    messagesDiv.textContent = message;
 }
