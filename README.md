@@ -1,13 +1,18 @@
+# How to run
+- if on Chrome, paste this in the url: chrome://flags/#unsafely-treat-insecure-origin-as-secure, and then enable it
+- On Firefox, paste this in the urr: about:config, set to true media.devices.insecure.enabled and media.getusermedia.insecure.enabled
+- Visit this website for more reference: https://stackoverflow.com/questions/60957829/navigator-mediadevices-is-undefined
+
 # Video Chat Application
-* Deployed at https://desolate-depths-86299.herokuapp.com/
 * Only two persons can join in one room
+
 ## Running the app on development server
 * `npm install`
 * `node index.js`
-* open `localhost:8000`
+* open `localhost:8000` 
+* !!! The application should display at the start a Dialog box if NOT refresh the page
 
-## Obtaining TURN/STUN credentials using Xiysys
-* Do not use the credentials provided
+## Obtaining TURN/STUN credentials using Xiysys, soon switching to google one
 * Go to https://xirsys.com/
 * Sign Up 
 * Log in to your account
