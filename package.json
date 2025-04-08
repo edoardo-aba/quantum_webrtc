@@ -1,19 +1,26 @@
 {
-  "name": "webrtc_implementation",
+  "name": "videochat-webfrontend",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon index.js"
   },
-  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webtutsplus/videoChat-WebFrontend.git"
+  },
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/webtutsplus/videoChat-WebFrontend/issues"
+  },
+  "homepage": "https://github.com/webtutsplus/videoChat-WebFrontend#readme",
   "dependencies": {
-    "express": "^5.1.0",
+    "ejs": "^3.1.5",
+    "express": "^4.17.1",
     "nodemon": "^3.1.9",
-    "socket.io": "^4.8.1",
-    "uuid": "^11.1.0"
+    "socket.io": "^1.2.0"
   }
 }
