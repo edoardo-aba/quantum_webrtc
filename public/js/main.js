@@ -1,6 +1,7 @@
 'use strict';
 
-//Defining some global utility letiables
+//Defining some global utility 
+
 let isChannelReady = false; 
 let isInitiator = false; // if client created the room 
 let isStarted = false; // if peer connection has started
@@ -10,16 +11,13 @@ let remoteStream; // stream if received from the other peer
 let turnReady;
 
 //Initialize turn/stun server configuration to move to google
-let pcConfig = turnConfig;
+let turn_stun_config = turnConfig;
 
+// this allows the browser to capture  audio and video
 let localStreamConstraints = {
     audio: true,
     video: true
   };
-
-
-//Not prompting for room name
-//let room = 'foo';
 
 // Prompting for room name:
 let room = prompt('Enter room name:');
@@ -140,7 +138,7 @@ window.onbeforeunload = function() {
 //Creating peer connection
 function createPeerConnection() {
   try {
-    pc = new RTCPeerConnection(pcConfig);
+    pc = new RTCPeerConnection(turn_stun_config);
     pc.onicecandidate = handleIceCandidate;
     pc.onaddstream = handleRemoteStreamAdded;
     pc.onremovestream = handleRemoteStreamRemoved;
