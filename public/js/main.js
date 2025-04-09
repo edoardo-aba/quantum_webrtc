@@ -146,9 +146,7 @@ window.onbeforeunload = function() {
   sendMessage('bye', room);
 };
 
-// ---------------------------------------------------------------------
-// Function: createPeerConnection
-// Description: Creates a new RTCPeerConnection, assigns event handlers for ICE candidates,
+// Creates a new RTCPeerConnection, assigns event handlers for ICE candidates,
 // remote stream addition and removal, and logs the connection creation.
 function createPeerConnection() {
   try {
@@ -164,9 +162,7 @@ function createPeerConnection() {
   }
 }
 
-// ---------------------------------------------------------------------
-// Function: handleIceCandidate
-// Description: Handles the ICE candidate event by sending the candidate details
+// Handles the ICE candidate event by sending the candidate details
 // to the peer via the signaling server.
 function handleIceCandidate(event) {
   console.log('icecandidate event: ', event);
@@ -182,24 +178,19 @@ function handleIceCandidate(event) {
   }
 }
 
-// ---------------------------------------------------------------------
-// Function: handleCreateOfferError
-// Description: Handles any errors that occur during the creation of an offer.
+// Handles any errors that occur during the creation of an offer.
 function handleCreateOfferError(event) {
   console.log('createOffer() error: ', event);
 }
 
-// ---------------------------------------------------------------------
-// Function: doCall
-// Description: Initiates the call by creating an offer to be sent to the peer.
+// Initiates the call by creating an offer to be sent to the peer.
 function doCall() {
   console.log('Sending offer to peer');
   pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
 }
 
-// ---------------------------------------------------------------------
-// Function: doAnswer
-// Description: Sends an answer back to the peer in response to receiving an offer.
+
+// Sends an answer back to the peer in response to receiving an offer.
 function doAnswer() {
   console.log('Sending answer to peer.');
   pc.createAnswer().then(
@@ -208,59 +199,45 @@ function doAnswer() {
   );
 }
 
-// ---------------------------------------------------------------------
-// Function: setLocalAndSendMessage
-// Description: Sets the session description as the local description and sends it to the peer.
+// Sets the session description as the local description and sends it to the peer.
 function setLocalAndSendMessage(sessionDescription) {
   pc.setLocalDescription(sessionDescription);
   console.log('setLocalAndSendMessage sending message', sessionDescription);
   sendMessage(sessionDescription, room);
 }
 
-// ---------------------------------------------------------------------
-// Function: onCreateSessionDescriptionError
-// Description: Logs an error that occurred when attempting to create a session description.
+// Logs an error that occurred when attempting to create a session description.
 function onCreateSessionDescriptionError(error) {
   trace('Failed to create session description: ' + error.toString());
 }
 
-// ---------------------------------------------------------------------
-// Function: handleRemoteStreamAdded
-// Description: Adds the remote stream to the remote video element when it is received.
+// Adds the remote stream to the remote video element when it is received.
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
   remoteStream = event.stream;
   remoteVideo.srcObject = remoteStream;
 }
 
-// ---------------------------------------------------------------------
-// Function: handleRemoteStreamRemoved
-// Description: Handles the removal of the remote stream.
+// Handles the removal of the remote stream.
 function handleRemoteStreamRemoved(event) {
   console.log('Remote stream removed. Event: ', event);
 }
 
-// ---------------------------------------------------------------------
-// Function: hangup
-// Description: Ends the call by stopping the peer connection and notifying the peer.
+// Ends the call by stopping the peer connection and notifying the peer.
 function hangup() {
   console.log('Hanging up.');
   stop();
   sendMessage('bye', room);
 }
 
-// ---------------------------------------------------------------------
-// Function: handleRemoteHangup
-// Description: Handles the event when the remote peer hangs up, terminating the session.
+// Handles the event when the remote peer hangs up, terminating the session.
 function handleRemoteHangup() {
   console.log('Session terminated.');
   stop();
   isInitiator = false;
 }
 
-// ---------------------------------------------------------------------
-// Function: stop
-// Description: Stops the peer connection by closing it and cleaning up the associated state.
+// Stops the peer connection by closing it and cleaning up the associated state.
 function stop() {
   isStarted = false;
   pc.close();
