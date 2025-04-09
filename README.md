@@ -1,4 +1,4 @@
-# How to run
+# Prerequisite
 - if on Chrome, paste this in the url: chrome://flags/#unsafely-treat-insecure-origin-as-secure, and then enable it
 - On Firefox, paste this in the urr: about:config, set to true media.devices.insecure.enabled and media.getusermedia.insecure.enabled
 - Visit this website for more reference: https://stackoverflow.com/questions/60957829/navigator-mediadevices-is-undefined
