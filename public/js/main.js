@@ -1,9 +1,8 @@
 'use strict';
 
-// Defining some global utility 
+let isInitiator = false; // if client created the room successfully
+let isChannelReady = false; // when the other peer joined the room
 
-let isChannelReady = false; 
-let isInitiator = false; // if client created the room 
 let isStarted = false; // if peer connection has started
 let localStream; // holds the webcam and audio stream
 let pc; // for the RTCPeerConnection object
@@ -32,29 +31,37 @@ if (room !== '') {
 
 // Defining socket connections for signalling
 
-// Function: on created event - Sets the peer as the initiator if the room is created
+// on created event - Sets the peer as the initiator if the room is created
 socket.on('created', function(room) {
   console.log('Created room ' + room);
   isInitiator = true;
 });
 
-// Function: on full event - Logs that the room is full
+
+
+// on full event - Logs that the room is full
 socket.on('full', function(room) {
   console.log('Room ' + room + ' is full');
+  alert('Room ' + room + ' is full');
 });
 
-// Function: on join event - Indicates a join request from another peer and sets readiness
+// on join event - Indicates a join request from another peer and sets readiness
 socket.on('join', function (room){
   console.log('Another peer made a request to join room ' + room);
   console.log('This peer is the initiator of room ' + room + '!');
   isChannelReady = true;
 });
 
-// Function: on joined event - Confirms a peer has joined the room and sets channel ready
+// on joined event - Confirms a peer has joined the room 
 socket.on('joined', function(room) {
   console.log('joined: ' + room);
   isChannelReady = true;
 });
+
+// on ready event - Confirms that the other peer successfully joined the room, and now the channel is ready for the communication
+socket.on('ready', function(room) {
+  console.log("Both of the peers are in the room: ", room )
+})
 
 // Function: on log event - Logs an array of messages to console
 socket.on('log', function(array) {

@@ -5,14 +5,14 @@ let os = require('os');
 let express = require('express');
 let app = express();
 let http = require('http');
-//For signalling in WebRTC
-let socketIO = require('socket.io');
 
+//For signalling in WebRTC we use a custom signalling server
+let socketIO = require('socket.io');
 
 app.use(express.static('public'))
 
 app.get("/", function(req, res){
-	res.render("index.ejs");
+	res.render("index.ejs"); // automatically looks in views folder
 });
 
 let server = http.createServer(app);
@@ -26,9 +26,8 @@ let io = socketIO(server);
 
 io.sockets.on('connection', function(socket) {
 
+
 	// Convenience function to log server messages on the client.
-	// Arguments is an array like object which contains all the arguments of log(). 
-	// To push all the arguments of log() in array, we have to use apply().
 	function log() {
 	  let array = ['Message from server:'];
 	  array.push.apply(array, arguments);
@@ -46,11 +45,11 @@ io.sockets.on('connection', function(socket) {
 	socket.on('create or join', function(room) {
 	  log('Received request to create or join room ' + room);
   
-	  let clientsInRoom = io.sockets.adapter.rooms[room];
-	  let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
+	  let clientsInRoom = io.sockets.adapter.rooms[room]; // undefined on on creation
+	  let numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0; // if it does existist count the number of clients in the room
 	  log('Room ' + room + ' now has ' + numClients + ' client(s)');
   
-	  if (numClients === 0) {
+	  if (numClients === 0) { // create a new room
 		socket.join(room);
 		log('Client ID ' + socket.id + ' created room ' + room);
 		socket.emit('created', room, socket.id);
@@ -60,7 +59,7 @@ io.sockets.on('connection', function(socket) {
 		io.sockets.in(room).emit('join', room);
 		socket.join(room);
 		socket.emit('joined', room, socket.id);
-		io.sockets.in(room).emit('ready');
+		io.sockets.in(room).emit('ready', room);
 	  } else { // max two clients
 		socket.emit('full', room);
 	  }
