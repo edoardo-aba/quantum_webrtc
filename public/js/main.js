@@ -145,7 +145,7 @@ function maybeStart() {
     pc.addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
-    if (isInitiator) { // sdp offer from the first peer
+    if (isInitiator) { // sdp offer from the first peer 
       doCall();
     }
   }
