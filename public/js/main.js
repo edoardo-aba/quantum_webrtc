@@ -9,6 +9,9 @@ let pc; // for the RTCPeerConnection object
 let remoteStream; // stream if received from the other peer
 let turnReady;
 
+
+//!!!!!!!!!!!!!!!!!!!!!! SIGNALLING !!!!!!!!!!!!!!!!!!!!!!
+
 // Initialize turn/stun server configuration to move to google
 let turn_stun_config = turnConfig;
 
@@ -73,7 +76,7 @@ socket.on('log', function(array) {
 // Function: socket.on('message')
 // Handles all incoming signaling messages to initiate, answer or manage the call.
 socket.on('message', function(message, room) {
-    console.log('Client received message:', message,  room);
+    console.log('Server says:', message, message.type, room);
     if (message === 'got user media') {
       maybeStart();
     } else if (message.type === 'offer') {
@@ -89,30 +92,28 @@ socket.on('message', function(message, room) {
         sdpMLineIndex: message.label,
         candidate: message.candidate
       });
-      pc.addIceCandidate(candidate);
+      pc.addIceCandidate(candidate); // adds theis network route to the peer connection and tries to access it 
     } else if (message === 'bye' && isStarted) {
       handleRemoteHangup();
     }
 });
-  
-// ---------------------------------------------------------------------
-// Function: sendMessage
-// Description: Sends a signaling message to the specified room using socket.io.
+
+//!!!!!!!!!!!!!!!!!!!!!! AUDIO VIDEO STREAM !!!!!!!!!!!!!!!!!!!!!!
+// Sends a signaling message to the specified room using socket.io.
 function sendMessage(message, room) {
   console.log('Client sending message: ', message, room);
   socket.emit('message', message, room);
 }
 
 // ---------------------------------------------------------------------
-// Function: gotStream
-// Description: Handles the local media stream once it is available, displays it
+// Handles the local media stream once it is available, displays it
 // on the local video element and notifies the other peer.
 function gotStream(stream) {
   console.log('Adding local stream.');
   localStream = stream;
-  localVideo.srcObject = stream;
-  sendMessage('got user media', room);
-  if (isInitiator) {
+  localVideo.srcObject = stream; // so it gets dispayed in the HTML
+  sendMessage('got user media', room); 
+  if (isInitiator) { //! only called by the first peer when connects
     maybeStart();
   }
 }
@@ -122,10 +123,10 @@ let localVideo = document.querySelector('#localVideo');
 let remoteVideo = document.querySelector('#remoteVideo');
 console.log("Going to find Local media");
 
-navigator.mediaDevices.getUserMedia(localStreamConstraints)
+navigator.mediaDevices.getUserMedia(localStreamConstraints) // audio and video
 .then(gotStream)
 .catch(function(e) {
-  alert('getUserMedia() error: ' + e.name);
+  alert('getUserMedia() error: ' + e.name); // error displayed when the flag is not enabled 
 });
 
 console.log('Getting user media with constraints', localStreamConstraints);
@@ -136,13 +137,15 @@ console.log('Getting user media with constraints', localStreamConstraints);
 // and then starts the peer connection process.
 function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
+  
+  // check if the requisites to start a connection are satisfied e.g the other peer joined
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
     pc.addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
-    if (isInitiator) {
+    if (isInitiator) { // sdp offer from the first peer
       doCall();
     }
   }
@@ -157,9 +160,12 @@ window.onbeforeunload = function() {
 // remote stream addition and removal, and logs the connection creation.
 function createPeerConnection() {
   try {
-    pc = new RTCPeerConnection(turn_stun_config);
-    pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
+    pc = new RTCPeerConnection(turn_stun_config); // this object manages all the connection
+    console.log("RTCPeerConnection Object: ", pc);
+
+    //! Assigning the methods to call to the object
+    pc.onicecandidate = handleIceCandidate; // it automatically start to collect ice candidates
+    pc.onaddstream = handleRemoteStreamAdded; // this is activated when the other peer media stream is received
     pc.onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
   } catch (e) {
@@ -174,10 +180,14 @@ function createPeerConnection() {
 function handleIceCandidate(event) {
   console.log('icecandidate event: ', event);
   if (event.candidate) {
+    console.log("List of ICE Candidates: ", event.candidate.candidate) // print all the candidates it can find
+
+    // send the ice candidate to the other peer so they can excahnge the ice candidates
+    // and find a way to communicate
     sendMessage({
       type: 'candidate',
-      label: event.candidate.sdpMLineIndex,
-      id: event.candidate.sdpMid,
+      label: event.candidate.sdpMLineIndex, // passing 1 for video
+      id: event.candidate.sdpMid,           // chrome identified set it to 1 for video 
       candidate: event.candidate.candidate
     }, room);
   } else {
@@ -193,6 +203,8 @@ function handleCreateOfferError(event) {
 // Initiates the call by creating an offer to be sent to the peer.
 function doCall() {
   console.log('Sending offer to peer');
+  // PeerConnection to create an SDP offer on success calls SetLocalAndSendMessage,
+  // if something fails  handleCreateOfferError is triggered
   pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
 }
 
@@ -210,7 +222,7 @@ function doAnswer() {
 function setLocalAndSendMessage(sessionDescription) {
   pc.setLocalDescription(sessionDescription);
   console.log('setLocalAndSendMessage sending message', sessionDescription);
-  sendMessage(sessionDescription, room);
+  sendMessage(sessionDescription, room); // type offere automatically generated
 }
 
 // Logs an error that occurred when attempting to create a session description.
@@ -220,7 +232,7 @@ function onCreateSessionDescriptionError(error) {
 
 // Adds the remote stream to the remote video element when it is received.
 function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
+  console.log('Remote stream added.', event.stream);
   remoteStream = event.stream;
   remoteVideo.srcObject = remoteStream;
 }

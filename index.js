@@ -38,7 +38,8 @@ io.sockets.on('connection', function(socket) {
     //Defining Socket Connections
     socket.on('message', function(message, room) {
 	  log('Client said: ', message);
-	  // for a real app, would be room-only (not broadcast)
+	  // very important this farward the message only to all the members present
+	  // in the room, is for broadcast, all the members except himself(who triggered message call) 
 	  socket.in(room).emit('message', message, room);
 	});
   
