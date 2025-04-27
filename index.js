@@ -1,10 +1,17 @@
 'use strict';
 
 //Loading dependencies & initializing express
-let os = require('os');
 let express = require('express');
+let fs = require('fs');
 let app = express();
 let http = require('http');
+let https = require('https');
+let path = require('path');
+
+const options ={
+	key: fs.readFileSync(path.join(__dirname, 'CA', 'key.pem')),
+	cert: fs.readFileSync(path.join(__dirname, 'CA', 'cert.pem'))
+}
 
 //For signalling in WebRTC we use a custom signalling server
 let socketIO = require('socket.io');
@@ -15,7 +22,7 @@ app.get("/", function(req, res){
 	res.render("index.ejs"); // automatically looks in views folder
 });
 
-let server = http.createServer(app);
+let server = https.createServer(options, app);
 
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {

@@ -1,5 +1,6 @@
 'use strict';
 
+
 let isInitiator = false; // if client created the room successfully
 let isChannelReady = false; // when the other peer joined the room
 
@@ -250,7 +251,7 @@ function handleRemoteHangup() {
 
   const remoteDiv = document.getElementById("div2");
   if(remoteDiv){
-    remoteDiv.style.display = 'none';
+    remoteDiv.style.display = 'none'
   }
 }
 
