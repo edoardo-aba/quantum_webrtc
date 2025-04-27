@@ -242,18 +242,16 @@ function handleRemoteStreamRemoved(event) {
   console.log('Remote stream removed. Event: ', event);
 }
 
-// Ends the call by stopping the peer connection and notifying the peer.
-function hangup() {
-  console.log('Hanging up.');
-  stop();
-  sendMessage('bye', room);
-}
-
 // Handles the event when the remote peer hangs up, terminating the session.
 function handleRemoteHangup() {
   console.log('Session terminated.');
   stop();
   isInitiator = false;
+
+  const remoteDiv = document.getElementById("div2");
+  if(remoteDiv){
+    remoteDiv.style.display = 'none';
+  }
 }
 
 // Stops the peer connection by closing it and cleaning up the associated state.

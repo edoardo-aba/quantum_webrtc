@@ -24,10 +24,16 @@ body {
 	font-family: 'Baloo Tamma 2', cursive;
 }
 
-.h-100 {
-	height: 100% !important;
+
+#video_display{
 	
+	height: 100% !important;
+	background-color: red;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
 }
+
 
 .row {
 	display: -ms-flexbox;
@@ -149,7 +155,7 @@ body {
 
 	.remote_div {
 		width: 33%;
-		float: left
+		float: left 
 	}
 
 	.remote2_div {
