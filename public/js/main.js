@@ -1,5 +1,7 @@
 'use strict';
 
+const { stat } = require("fs");
+
 
 let isInitiator = false; // if client created the room successfully
 let isChannelReady = false; // when the other peer joined the room
@@ -18,8 +20,8 @@ let turn_stun_config = turnConfig;
 
 // This allows the browser to capture audio and video
 let localStreamConstraints = {
-    audio: true,
-    video: true
+  audio: true,
+  video: true
 };
 
 // Prompting for room name:
@@ -36,7 +38,7 @@ if (room !== '') {
 // Defining socket connections for signalling
 
 // on created event - Sets the peer as the initiator if the room is created
-socket.on('created', function(room) {
+socket.on('created', function (room) {
   console.log('Created room ' + room);
   isInitiator = true;
 });
@@ -44,59 +46,58 @@ socket.on('created', function(room) {
 
 
 // on full event - Logs that the room is full
-socket.on('full', function(room) {
+socket.on('full', function (room) {
   console.log('Room ' + room + ' is full');
   alert('Room ' + room + ' is full');
 });
 
 // on join event - Indicates a join request from another peer and sets readiness
-socket.on('join', function (room){
+socket.on('join', function (room) {
   console.log('Another peer made a request to join room ' + room);
   console.log('This peer is the initiator of room ' + room + '!');
   isChannelReady = true;
 });
 
 // on joined event - Confirms a peer has joined the room 
-socket.on('joined', function(room) {
+socket.on('joined', function (room) {
   console.log('joined: ' + room);
   isChannelReady = true;
 });
 
 // on ready event - Confirms that the other peer successfully joined the room, and now the channel is ready for the communication
-socket.on('ready', function(room) {
-  console.log("Both of the peers are in the room: ", room )
+socket.on('ready', function (room) {
+  console.log("Both of the peers are in the room: ", room)
 })
 
 // Function: on log event - Logs an array of messages to console
-socket.on('log', function(array) {
+socket.on('log', function (array) {
   console.log.apply(console, array);
 });
 
 // Driver code for handling signalling messages
 
-// Function: socket.on('message')
 // Handles all incoming signaling messages to initiate, answer or manage the call.
-socket.on('message', function(message, room) {
-    console.log('Server says:', message, message.type, room);
-    if (message === 'got user media') {
+socket.on('message', function (message, room) {
+  console.log('Server says:', message, message.type, room);
+  if (message === 'got user media') {
+    maybeStart();
+  } else if (message.type === 'offer') {
+    if (!isInitiator && !isStarted) {
       maybeStart();
-    } else if (message.type === 'offer') {
-      if (!isInitiator && !isStarted) {
-        maybeStart();
-      }
-      pc.setRemoteDescription(new RTCSessionDescription(message));
-      doAnswer();
-    } else if (message.type === 'answer' && isStarted) {
-      pc.setRemoteDescription(new RTCSessionDescription(message));
-    } else if (message.type === 'candidate' && isStarted) {
-      let candidate = new RTCIceCandidate({
-        sdpMLineIndex: message.label,
-        candidate: message.candidate
-      });
-      pc.addIceCandidate(candidate); // adds theis network route to the peer connection and tries to access it 
-    } else if (message === 'bye' && isStarted) {
-      handleRemoteHangup();
     }
+    pc.setRemoteDescription(new RTCSessionDescription(message));
+    doAnswer();
+  } else if (message.type === 'answer' && isStarted) {
+    pc.setRemoteDescription(new RTCSessionDescription(message));
+  } else if (message.type === 'candidate' && isStarted) {
+    let candidate = new RTCIceCandidate({
+      sdpMLineIndex: message.label,
+      candidate: message.candidate
+    });
+    pc.addIceCandidate(candidate); // adds theis network route to the peer connection and tries to access it 
+  } else if (message === 'bye' && isStarted) {
+    handleRemoteHangup();
+  }
 });
 
 //!!!!!!!!!!!!!!!!!!!!!! AUDIO VIDEO STREAM !!!!!!!!!!!!!!!!!!!!!!
@@ -113,7 +114,7 @@ function gotStream(stream) {
   console.log('Adding local stream.');
   localStream = stream;
   localVideo.srcObject = stream; // so it gets dispayed in the HTML
-  sendMessage('got user media', room); 
+  sendMessage('got user media', room);
   if (isInitiator) { //! only called by the first peer when connects
     maybeStart();
   }
@@ -125,10 +126,10 @@ let remoteVideo = document.querySelector('#remoteVideo');
 console.log("Going to find Local media");
 
 navigator.mediaDevices.getUserMedia(localStreamConstraints) // audio and video
-.then(gotStream)
-.catch(function(e) {
-  alert('getUserMedia() error: ' + e.name); // error displayed when the flag is not enabled 
-});
+  .then(gotStream)
+  .catch(function (e) {
+    alert('getUserMedia() error: ' + e.name); // error displayed when the flag is not enabled 
+  });
 
 console.log('Getting user media with constraints', localStreamConstraints);
 
@@ -138,7 +139,7 @@ console.log('Getting user media with constraints', localStreamConstraints);
 // and then starts the peer connection process.
 function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
-  
+
   // check if the requisites to start a connection are satisfied e.g the other peer joined
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection');
@@ -153,7 +154,7 @@ function maybeStart() {
 }
 
 // Sending bye if user closes the window
-window.onbeforeunload = function() {
+window.onbeforeunload = function () {
   sendMessage('bye', room);
 };
 
@@ -168,6 +169,18 @@ function createPeerConnection() {
     pc.onicecandidate = handleIceCandidate; // it automatically start to collect ice candidates
     pc.onaddstream = handleRemoteStreamAdded; // this is activated when the other peer media stream is received
     pc.onremovestream = handleRemoteStreamRemoved;
+
+    pc.onconnectionstatechange = () => {
+      console.log('Connection state:', pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        logSecurityStats();
+      }
+    };
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE state:', pc.iceConnectionState);
+    };
+
+
     console.log('Created RTCPeerConnnection');
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
@@ -250,7 +263,7 @@ function handleRemoteHangup() {
   isInitiator = false;
 
   const remoteDiv = document.getElementById("div2");
-  if(remoteDiv){
+  if (remoteDiv) {
     remoteDiv.style.display = 'none'
   }
 }
@@ -261,3 +274,31 @@ function stop() {
   pc.close();
   pc = null;
 }
+
+async function logSecurityStats() {
+  try {
+    const stats = await pc.getStats();
+    console.log(stats);
+    stats.forEach(report => {
+      if (report.type === 'transport') {
+        console.log('DTLS state: ' + report.dtlsState);
+        console.log('DTLS cipher: ' + report.dtlsCipher);
+      }
+      // if (report.type === 'candidate-pair' && report.selected) {
+      //   if (report.srtpKeyStrength) {
+      //     console.log('SRTP key strength: ' + report.srtpKeyStrength + ' bits');
+      //   }
+      //   if (report.srtpCipher) {
+      //     console.log('SRTP cipher: ' + report.srtpCipher);
+      //   }
+      // }
+      if (report.type === 'certificate') {
+        console.log('Certificate fingerprint: ' + report.fingerprint);
+      }
+    });
+  } catch (e) {
+    console.error('Error gathering security stats:', e);
+  }
+}
+
+
