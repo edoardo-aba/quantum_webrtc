@@ -1,7 +1,5 @@
 'use strict';
 
-const { stat } = require("fs");
-
 
 let isInitiator = false; // if client created the room successfully
 let isChannelReady = false; // when the other peer joined the room
@@ -278,20 +276,11 @@ function stop() {
 async function logSecurityStats() {
   try {
     const stats = await pc.getStats();
-    console.log(stats);
     stats.forEach(report => {
       if (report.type === 'transport') {
         console.log('DTLS state: ' + report.dtlsState);
         console.log('DTLS cipher: ' + report.dtlsCipher);
       }
-      // if (report.type === 'candidate-pair' && report.selected) {
-      //   if (report.srtpKeyStrength) {
-      //     console.log('SRTP key strength: ' + report.srtpKeyStrength + ' bits');
-      //   }
-      //   if (report.srtpCipher) {
-      //     console.log('SRTP cipher: ' + report.srtpCipher);
-      //   }
-      // }
       if (report.type === 'certificate') {
         console.log('Certificate fingerprint: ' + report.fingerprint);
       }
