@@ -1,3 +1,7 @@
+## Notes
+- Up to now the Implementation works perfectly on Chrome, on Firefox it does not since, Firefox has stricter security requirements for accessing getUserMedia over HTTPS. 
+- A self-signed certificate is rejected by Firefox while being accepted by Chrome (once manually accepted).
+
 ## Running the app on development server
 * `npm install`
 * `node index.js`
