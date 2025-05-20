@@ -23,7 +23,7 @@ let localStreamConstraints = {
 };
 
 // Prompting for room name:
-let room = prompt('Enter room name:');
+const room = prompt('Enter room name:');
 
 // Initializing socket.io
 let socket = io.connect();
@@ -109,9 +109,17 @@ function sendMessage(message, room) {
 // Handles the local media stream once it is available, displays it
 // on the local video element and notifies the other peer.
 function gotStream(stream) {
-  console.log('Adding local stream.');
+  console.log('Adding local stream');
   localStream = stream;
   localVideo.srcObject = stream; // so it gets dispayed in the HTML
+  console.log("STREAM:", stream)
+  stream.getVideoTracks().forEach(track => {
+    console.log("Video Track:", track.label, track.getSettings());
+  });
+
+  stream.getAudioTracks().forEach(track => {
+    console.log("Audio Track:", track.label, track.getSettings());
+  });
   sendMessage('got user media', room);
   if (isInitiator) { //! only called by the first peer when connects
     maybeStart();
@@ -123,10 +131,10 @@ let localVideo = document.querySelector('#localVideo');
 let remoteVideo = document.querySelector('#remoteVideo');
 console.log("Going to find Local media");
 
-navigator.mediaDevices.getUserMedia(localStreamConstraints) // audio and video
+navigator.mediaDevices.getUserMedia(localStreamConstraints) // audio and video aquisition
   .then(gotStream)
   .catch(function (e) {
-    alert('getUserMedia() error: ' + e.name); // error displayed when the flag is not enabled 
+    alert('getUserMedia() error: ' + e.name);
   });
 
 console.log('Getting user media with constraints', localStreamConstraints);
@@ -160,13 +168,13 @@ window.onbeforeunload = function () {
 // remote stream addition and removal, and logs the connection creation.
 function createPeerConnection() {
   try {
-    pc = new RTCPeerConnection(turn_stun_config); // this object manages all the connection
+    pc = new RTCPeerConnection(turn_stun_config); // Object for managing the conncetion
     console.log("RTCPeerConnection Object: ", pc);
 
-    //! Assigning the methods to call to the object
-    pc.onicecandidate = handleIceCandidate; // it automatically start to collect ice candidates
-    pc.onaddstream = handleRemoteStreamAdded; // this is activated when the other peer media stream is received
-    pc.onremovestream = handleRemoteStreamRemoved;
+    //! Assigning ICE handling functions
+    pc.onicecandidate = handleIceCandidate; // Automatically starts collencting ICE candidates
+    pc.onaddstream = handleRemoteStreamAdded; // Activation on media stream receive
+    pc.onremovestream = handleRemoteStreamRemoved; // Activation on media stream removed
 
     pc.onconnectionstatechange = () => {
       console.log('Connection state:', pc.connectionState);
@@ -234,7 +242,7 @@ function doAnswer() {
 function setLocalAndSendMessage(sessionDescription) {
   pc.setLocalDescription(sessionDescription);
   console.log('setLocalAndSendMessage sending message', sessionDescription);
-  sendMessage(sessionDescription, room); // type offere automatically generated
+  sendMessage(sessionDescription, room); // type offer automatically generated
 }
 
 // Logs an error that occurred when attempting to create a session description.
@@ -283,6 +291,7 @@ async function logSecurityStats() {
       }
       if (report.type === 'certificate') {
         console.log('Certificate fingerprint: ' + report.fingerprint);
+        console.log("Base64 Certificate:", report.base64Certificate);
       }
     });
   } catch (e) {
