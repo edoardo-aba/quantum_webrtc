@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Coordinate Sharer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>WebRTC Coordinate Sharer 📍</h1>
+        <div class="controls">
+            <input type="text" id="roomName" placeholder="Enter Room Name">
+            <button id="connectButton">Connect</button>
+            <button id="generatePointButton" disabled>Generate & Send Point</button>
+        </div>
+        <canvas id="sharedCanvas"></canvas>
+        <div id="status">Status: Not Connected</div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
