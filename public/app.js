@@ -5,6 +5,7 @@ const canvas = document.getElementById('sharedCanvas');
 const statusDiv = document.getElementById('status');
 const ctx = canvas.getContext('2d');
 
+
 canvas.width = 400;
 canvas.height = 300;
 
