@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Drawing App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Collaborative Drawing Canvas</h1>
+
+    <div class="controls">
+        <input type="text" id="roomName" placeholder="Enter Room Name" autocomplete="off">
+        <button id="connectButton">Connect</button>
+    </div>
+
+    <div id="status">Status: Not Connected</div>
+
+    <div class="canvas-container">
+        <canvas id="sharedCanvas"></canvas>
+    </div>
+
+    <div class="color-picker">
+        <span>Brush Color:</span>
+        <input type="color" id="colorPicker" value="#0000FF">
+    </div>
+
+    <!-- The client-side logic -->
+    <script src="client.js"></script>
+</body>
+</html>
