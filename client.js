@@ -183,6 +183,8 @@ function initializePeerConnection() {
     peerConnection.ondatachannel = (event) => {
         console.log('CLIENT: Data channel received by remote peer!');
         dataChannel = event.channel;
+        console.log("DATA CHANNEL:", dataChannel);
+        // Set up event listeners for the data channel
         setupDataChannelEvents();
     };
 }
